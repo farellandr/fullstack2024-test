@@ -6,6 +6,7 @@ import (
 	"github.com/farellandr/fullstack2024-test/config"
 	"github.com/farellandr/fullstack2024-test/handlers"
 	"github.com/farellandr/fullstack2024-test/models"
+	"github.com/farellandr/fullstack2024-test/utils"
 	"github.com/gin-gonic/gin"
 
 	"github.com/joho/godotenv"
@@ -22,10 +23,11 @@ func main() {
 	}
 
 	db.AutoMigrate(&models.Client{})
+	redisClient := utils.InitRedis()
 
 	router := gin.Default()
 
-	clientHandler := handlers.NewClientHandler(db)
+	clientHandler := handlers.NewClientHandler(db, redisClient)
 	api := router.Group("/api/v1")
 	{
 		api.POST("/clients", clientHandler.CreateClient)
