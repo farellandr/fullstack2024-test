@@ -16,12 +16,14 @@ import (
 type ClientHandler struct {
 	DB          *gorm.DB
 	RedisClient *utils.RedisClient
+	S3Service   *utils.S3Service
 }
 
-func NewClientHandler(db *gorm.DB, redisClient *utils.RedisClient) *ClientHandler {
+func NewClientHandler(db *gorm.DB, redisClient *utils.RedisClient, s3Service *utils.S3Service) *ClientHandler {
 	return &ClientHandler{
 		DB:          db,
 		RedisClient: redisClient,
+		S3Service:   s3Service,
 	}
 }
 
@@ -163,4 +165,51 @@ func generateSlug(name string) string {
 
 	shortUUID := uuid.New().String()[:8]
 	return slug + "-" + shortUUID
+}
+
+func (h *ClientHandler) UploadClientLogo(c *gin.Context) {
+	slug := c.Param("slug")
+	var client models.Client
+
+	if err := h.DB.Where("slug = ?", slug).First(&client).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Client not found"})
+		return
+	}
+
+	file, err := c.FormFile("logo")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No file provided"})
+		return
+	}
+
+	if h.S3Service == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "S3 service not available"})
+		return
+	}
+
+	logoURL, err := h.S3Service.UploadFile(file)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload file: " + err.Error()})
+		return
+	}
+
+	if err := h.DB.Model(&client).Update("client_logo", logoURL).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update client logo"})
+		return
+	}
+
+	if h.RedisClient != nil {
+		if err := h.DB.Where("slug = ?", slug).First(&client).Error; err != nil {
+			log.Printf("Warning: Failed to get updated client for Redis: %v", err)
+		} else {
+			if err := h.RedisClient.SetClientData(slug, client); err != nil {
+				log.Printf("Warning: Failed to update client in Redis: %v", err)
+			}
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":  "Logo uploaded successfully",
+		"logo_url": logoURL,
+	})
 }

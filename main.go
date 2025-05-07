@@ -23,11 +23,13 @@ func main() {
 	}
 
 	db.AutoMigrate(&models.Client{})
+
 	redisClient := utils.InitRedis()
+	s3Service := utils.InitS3()
 
 	router := gin.Default()
 
-	clientHandler := handlers.NewClientHandler(db, redisClient)
+	clientHandler := handlers.NewClientHandler(db, redisClient, s3Service)
 	api := router.Group("/api/v1")
 	{
 		api.POST("/clients", clientHandler.CreateClient)
@@ -35,6 +37,7 @@ func main() {
 		api.GET("/clients/:slug", clientHandler.GetClientBySlug)
 		api.PUT("/clients/:slug", clientHandler.UpdateClient)
 		api.DELETE("/clients/:slug", clientHandler.DeleteClient)
+		api.POST("/clients/:slug/logo", clientHandler.UploadClientLogo)
 	}
 
 	router.Run(":3222")
