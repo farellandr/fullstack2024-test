@@ -1,0 +1,213 @@
+basePath: /api/v1
+definitions:
+  models.Client:
+    type: object
+host: localhost:3222
+info:
+  contact: {}
+  description: ASI Asia Pacific Fullstack test.
+  title: Fullstack2024 Test API
+  version: "1.0"
+paths:
+  /clients:
+    get:
+      description: Retrieve all client records from the database
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Client'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get all clients
+      tags:
+      - clients
+    post:
+      consumes:
+      - application/json
+      description: Create a new client entry in the database and cache in Redis
+      parameters:
+      - description: Client data
+        in: body
+        name: client
+        required: true
+        schema:
+          $ref: '#/definitions/models.Client'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Client'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a new client
+      tags:
+      - clients
+  /clients/{slug}:
+    delete:
+      description: Delete a client by slug from the database and Redis cache
+      parameters:
+      - description: Client Slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete a client
+      tags:
+      - clients
+    get:
+      description: Retrieve a single client by slug from Redis cache or database
+      parameters:
+      - description: Client Slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Client'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get client by slug
+      tags:
+      - clients
+    put:
+      consumes:
+      - application/json
+      description: Update a client's data by slug and refresh Redis cache
+      parameters:
+      - description: Client Slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: Updated client data
+        in: body
+        name: client
+        required: true
+        schema:
+          $ref: '#/definitions/models.Client'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Client'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update a client
+      tags:
+      - clients
+  /clients/{slug}/upload-logo:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a client logo to S3 and update client record
+      parameters:
+      - description: Client Slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: Client logo file
+        in: formData
+        name: logo
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Upload client logo
+      tags:
+      - clients
+swagger: "2.0"

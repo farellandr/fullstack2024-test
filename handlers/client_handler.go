@@ -7,9 +7,8 @@ import (
 
 	"github.com/farellandr/fullstack2024-test/models"
 	"github.com/farellandr/fullstack2024-test/utils"
-	"github.com/google/uuid"
-
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -27,6 +26,17 @@ func NewClientHandler(db *gorm.DB, redisClient *utils.RedisClient, s3Service *ut
 	}
 }
 
+// CreateClient godoc
+// @Summary Create a new client
+// @Description Creates a new client record in the database and caches it in Redis.
+// @Tags clients
+// @Accept json
+// @Produce json
+// @Param client body models.Client true "Client object to be created"
+// @Success 201 {object} models.Client "Successfully created client"
+// @Failure 400 {object} map[string]string "Invalid request payload"
+// @Failure 500 {object} map[string]string "Failed to create client"
+// @Router /clients [post]
 func (h *ClientHandler) CreateClient(c *gin.Context) {
 	var client models.Client
 
@@ -53,6 +63,14 @@ func (h *ClientHandler) CreateClient(c *gin.Context) {
 	c.JSON(http.StatusCreated, client)
 }
 
+// GetAllClients godoc
+// @Summary Get all clients
+// @Description Retrieves a list of all client records from the database.
+// @Tags clients
+// @Produce json
+// @Success 200 {array} models.Client "A list of all clients"
+// @Failure 500 {object} map[string]string "Failed to retrieve clients"
+// @Router /clients [get]
 func (h *ClientHandler) GetAllClients(c *gin.Context) {
 	var clients []models.Client
 
@@ -64,6 +82,15 @@ func (h *ClientHandler) GetAllClients(c *gin.Context) {
 	c.JSON(http.StatusOK, clients)
 }
 
+// GetClientBySlug godoc
+// @Summary Get client by slug
+// @Description Retrieves a single client record by its unique slug, first checking the Redis cache and then the database.
+// @Tags clients
+// @Produce json
+// @Param slug path string true "The unique slug of the client to retrieve"
+// @Success 200 {object} models.Client "The requested client"
+// @Failure 404 {object} map[string]string "Client not found"
+// @Router /clients/{slug} [get]
 func (h *ClientHandler) GetClientBySlug(c *gin.Context) {
 	slug := c.Param("slug")
 	var client models.Client
@@ -90,6 +117,19 @@ func (h *ClientHandler) GetClientBySlug(c *gin.Context) {
 	c.JSON(http.StatusOK, client)
 }
 
+// UpdateClient godoc
+// @Summary Update a client
+// @Description Updates an existing client's data identified by its slug and refreshes the Redis cache.
+// @Tags clients
+// @Accept json
+// @Produce json
+// @Param slug path string true "The unique slug of the client to update"
+// @Param client body models.Client true "Updated client object"
+// @Success 200 {object} models.Client "Successfully updated client"
+// @Failure 400 {object} map[string]string "Invalid request payload"
+// @Failure 404 {object} map[string]string "Client not found"
+// @Failure 500 {object} map[string]string "Failed to update client"
+// @Router /clients/{slug} [put]
 func (h *ClientHandler) UpdateClient(c *gin.Context) {
 	slug := c.Param("slug")
 	var client models.Client
@@ -129,6 +169,16 @@ func (h *ClientHandler) UpdateClient(c *gin.Context) {
 	c.JSON(http.StatusOK, client)
 }
 
+// DeleteClient godoc
+// @Summary Delete a client
+// @Description Deletes a client record from the database and removes it from the Redis cache by its unique slug.
+// @Tags clients
+// @Produce json
+// @Param slug path string true "The unique slug of the client to delete"
+// @Success 200 {object} map[string]string "Successfully deleted client"
+// @Failure 404 {object} map[string]string "Client not found"
+// @Failure 500 {object} map[string]string "Failed to delete client"
+// @Router /clients/{slug} [delete]
 func (h *ClientHandler) DeleteClient(c *gin.Context) {
 	slug := c.Param("slug")
 	var client models.Client
@@ -167,6 +217,19 @@ func generateSlug(name string) string {
 	return slug + "-" + shortUUID
 }
 
+// UploadClientLogo godoc
+// @Summary Upload client logo
+// @Description Uploads a client logo image to S3, updates the client record in the database with the S3 URL, and refreshes the Redis cache.
+// @Tags clients
+// @Accept multipart/form-data
+// @Produce json
+// @Param slug path string true "The unique slug of the client to update the logo for"
+// @Param logo formData file true "The logo file to upload (e.g., .png, .jpg)"
+// @Success 200 {object} map[string]string "Successfully uploaded logo"
+// @Failure 400 {object} map[string]string "Invalid file upload"
+// @Failure 404 {object} map[string]string "Client not found"
+// @Failure 500 {object} map[string]string "Failed to upload logo or update client"
+// @Router /clients/{slug}/upload-logo [post]
 func (h *ClientHandler) UploadClientLogo(c *gin.Context) {
 	slug := c.Param("slug")
 	var client models.Client
